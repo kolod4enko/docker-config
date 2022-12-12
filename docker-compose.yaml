@@ -1,0 +1,61 @@
+version: '3.8'
+services:
+  rabbitmq:
+    restart: unless-stopped
+    image: rabbitmq:3.8.9-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    hostname: rabbit
+    volumes:
+      - ./data/rabbit:/var/lib/rabbitmq/mnesia/
+  redis:
+    restart: unless-stopped
+    image: "redis:alpine"
+    networks:
+      - default
+    #открывать порт не безопасно, храним чувствительные данные
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./data/redis:/data
+  mongodb:
+    restart: unless-stopped
+    image: mongo
+    container_name: mongodb
+    environment:
+      - PUID=1000
+      - PGID=1000
+    volumes:
+      - ./data/mongodb/database:/data/db
+    ports:
+      - "27017:27017"
+  postgres:
+      restart: unless-stopped
+      logging:
+        driver: "json-file"
+        options:
+          max-size: "200k"
+          max-file: "10"
+      shm_size: 1g
+      image: postgres:alpine
+      ports:
+        - "5423:5432"
+      environment:
+        - DEBUG=false
+        - POSTGRES_USER=${POSTGRES_USER}
+        - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+        - POSTGRES_DB=${POSTGRES_DATABASE}
+      networks:
+        - default
+      volumes:
+        - ./data/postgresql:/var/lib/postgresql
+  clickhouse:
+    networks:
+      - clickhouse
+    container_name: clickhouse
+    image: clickhouse/clickhouse-server
+    ports:
+      - "8123:8123"
+networks:
+  clickhouse: null
